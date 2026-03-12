@@ -1,4 +1,4 @@
-carrental = {
+config = {
     maxrentaltime = 120,
     deleteonlogout = true,
     locations = {

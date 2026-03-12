@@ -5,13 +5,13 @@ local warningSent = false
 
 CreateThread(function()
     Wait(100)
-    if carrental and carrental.vehicleImages then
-        vehicleImages = carrental.vehicleImages
+    if config and config.vehicleImages then
+        vehicleImages = config.vehicleImages
     end
 end)
 
 CreateThread(function()
-    for _, location in ipairs(carrental.locations) do
+    for _, location in ipairs(config.locations) do
         local blip = AddBlipForCoord(location.coords.x, location.coords.y, location.coords.z)
         SetBlipSprite(blip, location.blip.sprite)
         SetBlipDisplay(blip, 4)
@@ -25,7 +25,7 @@ CreateThread(function()
 end)
 
 CreateThread(function()
-    for _, location in ipairs(carrental.locations) do
+    for _, location in ipairs(config.locations) do
         local modelHash = GetHashKey(location.ped)
         RequestModel(modelHash)
         while not HasModelLoaded(modelHash) do
@@ -57,7 +57,7 @@ end)
 function OpenRentalMenu()
     local menuOptions = {}
 
-    for _, vehicle in ipairs(carrental.vehicles) do
+    for _, vehicle in ipairs(config.vehicles) do
         local vehicleImage = nil
         if vehicleImages and vehicleImages[vehicle.model] then
             vehicleImage = vehicleImages[vehicle.model]
@@ -84,7 +84,7 @@ function OpenRentalMenu()
             title = vehicle.name,
             icon = vehicleIcon,
             description = string.format('Price: $%d per minute | Max: %d minutes', vehicle.price, vehicle.maxduration),
-            event = 'carrental:selectVehicle',
+            event = 'perc-rental:selectVehicle',
             image = vehicleImage,
             args = {model = vehicle.model, name = vehicle.name, price = vehicle.price, maxDuration = vehicle.maxduration}
         })
@@ -94,7 +94,7 @@ function OpenRentalMenu()
         table.insert(menuOptions, {
             title = 'Cancel Rental',
             description = 'Cancel your current rental',
-            event = 'carrental:cancelMenu'
+            event = 'perc-rental:cancelMenu'
         })
     end
 
@@ -107,7 +107,7 @@ function OpenRentalMenu()
     lib.showContext('carrental_menu')
 end
 
-RegisterNetEvent('carrental:selectVehicle', function(data)
+RegisterNetEvent('perc-rental:selectVehicle', function(data)
     local paymentMethod = lib.inputDialog('Rent ' .. data.name, {
         { type = 'select', label = 'Payment Method', required = true, default = 'bank', options = {
             { label = 'Bank', value = 'bank' },
@@ -133,7 +133,7 @@ RegisterNetEvent('carrental:selectVehicle', function(data)
 
         if duration and duration > 0 and duration <= data.maxDuration then
             local totalCost = data.price * duration
-            local result = lib.callback.await('carrental:createRental', false, data.model, duration, method, totalCost)
+            local result = lib.callback.await('perc-rental:createRental', false, data.model, duration, method, totalCost)
 
             if result and result.success then
                 currentRental = {
@@ -169,7 +169,7 @@ RegisterNetEvent('carrental:selectVehicle', function(data)
     end
 end)
 
-RegisterNetEvent('carrental:cancelMenu', function()
+RegisterNetEvent('perc-rental:cancelMenu', function()
     local confirm = lib.inputDialog('Cancel Rental', {
         { type = 'select', label = 'Are you sure you want to cancel your rental?', required = true, default = 'yes', options = {
             { label = 'Yes', value = 'yes' },
@@ -178,7 +178,7 @@ RegisterNetEvent('carrental:cancelMenu', function()
     })
 
     if confirm and confirm[1] == 'yes' then
-        local result = lib.callback.await('carrental:cancelRental', false)
+        local result = lib.callback.await('perc-rental:cancelRental', false)
 
         if result and result.success then
             currentRental = nil
@@ -208,7 +208,7 @@ RegisterNetEvent('carrental:cancelMenu', function()
     end
 end)
 
-RegisterNetEvent('carrental:deleteVehicle', function()
+RegisterNetEvent('perc-rental:deleteVehicle', function()
     if rentalVehicle and DoesEntityExist(rentalVehicle) then
         DeleteEntity(rentalVehicle)
         rentalVehicle = nil
@@ -226,7 +226,7 @@ CreateThread(function()
             local remainingTime = currentRental.endTime - currentTime
 
             if remainingTime <= 0 then
-                TriggerEvent('carrental:deleteVehicle')
+                TriggerEvent('perc-rental:deleteVehicle')
                 lib.notify({
                     icon = 'car',
                     title = 'Rental Expired',

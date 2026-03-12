@@ -71,7 +71,7 @@ lib.addCommand('checkrental', {
     end
 end)
 
-lib.callback.register('carrental:createRental', function(source, vehicleModel, durationMinutes, paymentMethod, totalCost)
+lib.callback.register('perc-rental:createRental', function(source, vehicleModel, durationMinutes, paymentMethod, totalCost)
     local src = source
     local playerRental = vehicleRentals[src]
     
@@ -80,14 +80,14 @@ lib.callback.register('carrental:createRental', function(source, vehicleModel, d
     end
     
     local duration = math.floor(tonumber(durationMinutes))
-    duration = math.max(1, math.min(duration, carrental.maxrentaltime))
+    duration = math.max(1, math.min(duration, config.maxrentaltime))
     
     if paymentMethod ~= 'cash' and paymentMethod ~= 'bank' then
         return { success = false, message = 'Invalid payment method selected.' }
     end
     
     local vehicleConfig = nil
-    for _, vehicle in ipairs(carrental.vehicles) do
+    for _, vehicle in ipairs(config.vehicles) do
         if vehicle.model == vehicleModel then
             vehicleConfig = vehicle
             break
@@ -127,7 +127,7 @@ lib.callback.register('carrental:createRental', function(source, vehicleModel, d
     local spawnLocation = nil
     local spawnLocationFound = false
     
-    for _, location in ipairs(carrental.locations) do
+    for _, location in ipairs(config.locations) do
         if location.spawnLocations and #location.spawnLocations > 0 then
             for _, potentialSpawn in ipairs(location.spawnLocations) do
                 if isSpawnLocationClear(potentialSpawn.x, potentialSpawn.y, potentialSpawn.z, 2.5) then
@@ -169,6 +169,14 @@ lib.callback.register('carrental:createRental', function(source, vehicleModel, d
         plate = rentalPlate,
         vehicle = vehicle
     }
+
+    exports['perc-logging']:SendLog(src, 'car_rental', {
+        vehicle_name = vehicleConfig.name,
+        duration = duration,
+        cost = totalCost,
+        payment_type = paymentMethod,
+        plate = rentalPlate
+    })
     
     local vehicleInfo = {
         model = vehicleModel,
@@ -187,7 +195,7 @@ lib.callback.register('carrental:createRental', function(source, vehicleModel, d
     }
 end)
 
-lib.callback.register('carrental:cancelRental', function(source)
+lib.callback.register('perc-rental:cancelRental', function(source)
     local src = source
     local playerRental = vehicleRentals[src]
     
@@ -205,7 +213,7 @@ lib.callback.register('carrental:cancelRental', function(source)
     
     vehicleRentals[src] = nil
     
-    TriggerClientEvent('carrental:deleteVehicle', src)
+    TriggerClientEvent('perc-rental:deleteVehicle', src)
     
     return { success = true, message = 'Rental cancelled successfully.' }
 end)
@@ -235,7 +243,7 @@ CreateThread(function()
                     DeleteEntity(rental.vehicle)
                 end
                 
-                TriggerClientEvent('carrental:deleteVehicle', src)
+                TriggerClientEvent('perc-rental:deleteVehicle', src)
                 
                 vehicleRentals[src] = nil
             end
@@ -247,8 +255,8 @@ end)
 
 AddEventHandler('playerDropped', function(reason)
     local src = source
-    if carrental.deleteonlogout and vehicleRentals[src] then
-        TriggerClientEvent('carrental:deleteVehicle', src)
+    if config.deleteonlogout and vehicleRentals[src] then
+        TriggerClientEvent('perc-rental:deleteVehicle', src)
         vehicleRentals[src] = nil
     end
 end)

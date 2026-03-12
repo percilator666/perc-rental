@@ -1,4 +1,4 @@
-carrental.vehicleImages = {
+config.vehicleImages = {
     ['freightcar'] = 'https://docs.fivem.net/vehicles/freightcar.webp',
     ['kosatka'] = 'https://docs.fivem.net/vehicles/kosatka.webp',
     ['alkonost'] = 'https://docs.fivem.net/vehicles/alkonost.webp',

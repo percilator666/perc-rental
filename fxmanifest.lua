@@ -3,19 +3,18 @@ game 'gta5'
 lua54 'yes'
 
 author 'percilator.'
-description 'Car Rental'
+description 'Rental Script'
 version '1.0.0'
 
 shared_scripts {
    '@ox_lib/init.lua',
-   'config.lua',
-   'vehicles.lua'
+   'shared/*.lua'
 }
 
 client_scripts {
-   'client.lua'
+   'client/*.lua'
 }
 
 server_scripts {
-   'server.lua'
+   'server/*.lua'
 }
