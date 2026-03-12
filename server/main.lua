@@ -71,12 +71,17 @@ lib.addCommand('checkrental', {
     end
 end)
 
-lib.callback.register('perc-rental:createRental', function(source, vehicleModel, durationMinutes, paymentMethod, totalCost)
+lib.callback.register('perc-rental:createRental', function(source, vehicleModel, durationMinutes, paymentMethod, totalCost, locationIndex)
     local src = source
     local playerRental = vehicleRentals[src]
     
     if playerRental then
         return { success = false, message = 'You already have an active rental.' }
+    end
+
+    local location = config.locations[locationIndex]
+    if not location then
+        return { success = false, message = 'Invalid rental location.' }
     end
     
     local duration = math.floor(tonumber(durationMinutes))
@@ -87,7 +92,7 @@ lib.callback.register('perc-rental:createRental', function(source, vehicleModel,
     end
     
     local vehicleConfig = nil
-    for _, vehicle in ipairs(config.vehicles) do
+    for _, vehicle in ipairs(location.vehicles) do
         if vehicle.model == vehicleModel then
             vehicleConfig = vehicle
             break
@@ -95,7 +100,7 @@ lib.callback.register('perc-rental:createRental', function(source, vehicleModel,
     end
     
     if not vehicleConfig then
-        return { success = false, message = 'Invalid vehicle selected.' }
+        return { success = false, message = 'Invalid vehicle selected for this location.' }
     end
     
     if duration > vehicleConfig.maxduration then
@@ -125,23 +130,15 @@ lib.callback.register('perc-rental:createRental', function(source, vehicleModel,
     local rentalPlate = 'RENTAL' .. math.random(1000, 9999)
     
     local spawnLocation = nil
-    local spawnLocationFound = false
-    
-    for _, location in ipairs(config.locations) do
-        if location.spawnLocations and #location.spawnLocations > 0 then
-            for _, potentialSpawn in ipairs(location.spawnLocations) do
-                if isSpawnLocationClear(potentialSpawn.x, potentialSpawn.y, potentialSpawn.z, 2.5) then
-                    spawnLocation = potentialSpawn
-                    spawnLocationFound = true
-                    break
-                end
-            end
-            if spawnLocationFound then break end
+    for _, potentialSpawn in ipairs(location.spawnLocations) do
+        if isSpawnLocationClear(potentialSpawn.x, potentialSpawn.y, potentialSpawn.z, 2.5) then
+            spawnLocation = potentialSpawn
+            break
         end
     end
     
     if not spawnLocation then
-        return { success = false, message = 'No clear spawn locations available. Please try again later.' }
+        return { success = false, message = 'No clear spawn locations available at this location. Please try again later.' }
     end
     
     local modelHash = GetHashKey(vehicleModel)
@@ -170,7 +167,7 @@ lib.callback.register('perc-rental:createRental', function(source, vehicleModel,
         vehicle = vehicle
     }
 
-    exports['perc-logging']:SendLog(src, 'car_rental', {
+    exports['pursuit-logging']:SendLog(src, 'car_rental', {
         vehicle_name = vehicleConfig.name,
         duration = duration,
         cost = totalCost,

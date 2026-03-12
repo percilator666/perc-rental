@@ -25,7 +25,7 @@ CreateThread(function()
 end)
 
 CreateThread(function()
-    for _, location in ipairs(config.locations) do
+    for k, location in ipairs(config.locations) do
         local modelHash = GetHashKey(location.ped)
         RequestModel(modelHash)
         while not HasModelLoaded(modelHash) do
@@ -47,17 +47,19 @@ CreateThread(function()
                 label = 'Rent a Vehicle',
                 distance = 2.0,
                 onSelect = function()
-                    OpenRentalMenu()
+                    OpenRentalMenu(location.vehicles, k)
                 end
             }
         })
     end
 end)
 
-function OpenRentalMenu()
+function OpenRentalMenu(locationVehicles, locationIndex)
     local menuOptions = {}
 
-    for _, vehicle in ipairs(config.vehicles) do
+    if not locationVehicles then return end
+
+    for _, vehicle in ipairs(locationVehicles) do
         local vehicleImage = nil
         if vehicleImages and vehicleImages[vehicle.model] then
             vehicleImage = vehicleImages[vehicle.model]
@@ -86,7 +88,13 @@ function OpenRentalMenu()
             description = string.format('Price: $%d per minute | Max: %d minutes', vehicle.price, vehicle.maxduration),
             event = 'perc-rental:selectVehicle',
             image = vehicleImage,
-            args = {model = vehicle.model, name = vehicle.name, price = vehicle.price, maxDuration = vehicle.maxduration}
+            args = {
+                model = vehicle.model, 
+                name = vehicle.name, 
+                price = vehicle.price, 
+                maxDuration = vehicle.maxduration,
+                locationIndex = locationIndex
+            }
         })
     end
 
@@ -133,7 +141,7 @@ RegisterNetEvent('perc-rental:selectVehicle', function(data)
 
         if duration and duration > 0 and duration <= data.maxDuration then
             local totalCost = data.price * duration
-            local result = lib.callback.await('perc-rental:createRental', false, data.model, duration, method, totalCost)
+            local result = lib.callback.await('perc-rental:createRental', false, data.model, duration, method, totalCost, data.locationIndex)
 
             if result and result.success then
                 currentRental = {
